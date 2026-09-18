@@ -1,0 +1,11 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 960, "h": 720, "title": "Aguardando link" },
+    { "file": "Processing.dc.html", "x": 1040, "y": 0, "w": 960, "h": 720, "title": "Processando" },
+    { "file": "Success.dc.html", "x": 2080, "y": 0, "w": 960, "h": 720, "title": "Concluído" },
+    { "file": "Error.dc.html", "x": 3120, "y": 0, "w": 960, "h": 720, "title": "Erro" },
+    { "file": "MainLight.dc.html", "x": 4160, "y": 0, "w": 960, "h": 720, "title": "Tom claro" },
+    { "file": "Mobile.dc.html", "x": 0, "y": 840, "w": 390, "h": 844, "title": "Mobile" }
+  ],
+  "launch": { "view": "canvas" }
+}

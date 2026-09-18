@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>quadro</title>
+  <meta name="description" content="Ferramenta pessoal para baixar vídeos do YouTube e do Facebook a partir de um link.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="card-wrap">
+    <header class="app-header">
+      <div>
+        <p class="kicker mono">ferramenta pessoal</p>
+        <h1>quadro</h1>
+        <p class="subtitle">baixe vídeos do YouTube e Facebook a partir de um link</p>
+      </div>
+      <button type="button" id="theme-toggle" class="bulb-btn" aria-label="Alternar entre tema claro e escuro">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M9 18h6M10 21h4" stroke-width="1.6" stroke-linecap="round"/>
+          <path class="bulb-fill" d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9V17h5v-1.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3Z" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <form id="download-form" class="panel" novalidate>
+      <span class="bracket bracket-tl"></span>
+      <span class="bracket bracket-tr"></span>
+      <span class="bracket bracket-bl"></span>
+      <span class="bracket bracket-br"></span>
+
+      <div class="status-bar">
+        <div class="status-left">
+          <span id="status-dot" class="dot dot-idle"></span>
+          <span id="status-label" class="mono status-label">aguardando link</span>
+        </div>
+        <span id="status-time" class="mono status-time">--:--:--</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label mono" for="url-input">link do vídeo</label>
+        <div class="input-wrap">
+          <input id="url-input" type="text" inputmode="url" autocomplete="off" spellcheck="false"
+                 placeholder="Cole aqui o link do YouTube ou Facebook" class="mono" required>
+          <span id="platform-chip" class="platform-chip mono" hidden>
+            <span id="platform-icon"></span>
+            <span id="platform-name"></span>
+          </span>
+        </div>
+        <p class="hint">Detectamos a plataforma automaticamente assim que você colar o link.</p>
+      </div>
+
+      <div class="field key-field">
+        <div class="field-label-row">
+          <label class="field-label mono" for="key-input" style="margin-bottom:0;">chave de acesso</label>
+          <label class="switch-row">
+            <span class="switch-text">salvar neste dispositivo</span>
+            <input type="checkbox" id="save-key-toggle" class="switch-input">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+        <div class="input-wrap">
+          <input id="key-input" type="password" autocomplete="off" placeholder="••••••••••••" class="mono" required>
+          <button type="button" id="toggle-key-visibility" class="icon-btn" aria-label="Mostrar chave de acesso">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke-width="1.6"/>
+              <circle cx="12" cy="12" r="3" stroke-width="1.6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" id="submit-btn" class="btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 19h16" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span>Baixar vídeo</span>
+      </button>
+
+      <div id="progress-area" class="progress-area" hidden>
+        <div class="progress-row">
+          <span class="mono progress-label">baixando em qualidade máxima</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill"></div>
+          <div class="progress-shimmer"></div>
+        </div>
+        <p id="progress-caption" class="mono progress-caption">verificando o link</p>
+      </div>
+
+      <div id="success-area" class="result-area" hidden>
+        <div class="result-row">
+          <div class="thumb">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 7v10l8-5-8-5Z"/></svg>
+          </div>
+          <div class="result-meta">
+            <p id="result-title" class="result-title"></p>
+            <p id="result-detail" class="mono result-detail"></p>
+          </div>
+        </div>
+        <button type="button" id="save-file-btn" class="btn-primary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 19h16" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>Salvar arquivo</span>
+        </button>
+        <button type="button" id="reset-btn" class="link-btn mono">baixar outro vídeo</button>
+      </div>
+
+      <div id="error-area" class="error-area" hidden>
+        <div class="error-row">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3 2 20h20L12 3Z" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M12 10v4" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="12" cy="17" r="0.9" fill="currentColor"/>
+          </svg>
+          <div>
+            <p class="error-title">Não foi possível baixar este vídeo</p>
+            <p id="error-detail" class="error-detail"></p>
+          </div>
+        </div>
+        <button type="button" id="retry-btn" class="btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M4 4v6h6M20 20v-6h-6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 10a8 8 0 0 0-14.6-4.6M4 14a8 8 0 0 0 14.6 4.6" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span>Tentar novamente</span>
+        </button>
+      </div>
+    </form>
+
+    <p class="footer-note mono">uso pessoal — respeite direitos autorais e termos das plataformas</p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+# Editai - site publico, politica de privacidade, API e painel.
+{
+    auto_https disable_redirects
+}
+
+http://147-15-107-15.sslip.io, http://147.15.107.15 {
+    @privacy path /privacidade /privacidade/
+    handle @privacy {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    @backend path /api/* /health /app-ads.txt /painel-c3f9ea02240fed7c*
+    handle @backend {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    handle_path /quadro-api/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:3001
+    }
+}
+
+https://147-15-107-15.sslip.io {
+    @privacy path /privacidade /privacidade/
+    handle @privacy {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    @backend path /api/* /health /app-ads.txt /painel-c3f9ea02240fed7c*
+    handle @backend {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    handle_path /quadro-api/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:3001
+    }
+}

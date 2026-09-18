@@ -1,0 +1,15 @@
+[Unit]
+Description=Quadro - API de download de videos
+After=network.target
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/opt/quadro/backend
+EnvironmentFile=/opt/quadro/backend/.env
+ExecStart=/opt/quadro/backend/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

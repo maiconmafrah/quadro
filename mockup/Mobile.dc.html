@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .stage { --bg: oklch(0.15 0.01 60); --panel: oklch(0.185 0.012 60); --field: oklch(0.12 0.01 60); --line: oklch(0.34 0.01 60); --line-soft: oklch(0.28 0.01 60); --ink: oklch(0.93 0.01 60); --ink-dim: oklch(0.64 0.02 60); --ink-faint: oklch(0.46 0.02 60); --amber: oklch(0.78 0.15 55); --amber-ink: oklch(0.18 0.03 55); --teal: oklch(0.72 0.1 195); --red: oklch(0.65 0.18 25); }
+  .sans { font-family: 'Space Grotesk', sans-serif; }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { color: oklch(0.85 0.16 55); }
+</style>
+</helmet>
+
+<div class="stage sans" style="width:390px;height:844px;background:var(--bg);color:var(--ink);position:relative;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 40% at 50% 20%, transparent 0%, oklch(0.08 0.01 60 / 0.55) 100%);pointer-events:none;"></div>
+
+  <div style="position:relative;padding:64px 20px 24px;">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <div class="mono" style="font-size:10px;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:6px;">ferramenta pessoal</div>
+        <div style="font-size:24px;font-weight:600;line-height:1;">quadro</div>
+        <div class="sans" style="font-size:12px;color:var(--ink-dim);margin-top:6px;">baixe vídeos do YouTube e Facebook a partir de um link</div>
+      </div>
+      <button style="width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M9 18h6M10 21h4" stroke="var(--ink-dim)" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.45 1 1.15 1 1.9V17h5v-1.2c0-.75.4-1.45 1-1.9A6 6 0 0 0 12 3Z" stroke="var(--ink-dim)" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div style="position:relative;background:var(--panel);padding:20px;">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="position:absolute;top:-6px;left:-6px;"><path d="M1 9V1H9" stroke="var(--amber)" stroke-width="1.4" opacity="0.55"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="position:absolute;top:-6px;right:-6px;"><path d="M13 9V1H5" stroke="var(--amber)" stroke-width="1.4" opacity="0.55"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="position:absolute;bottom:-6px;left:-6px;"><path d="M1 5V13H9" stroke="var(--amber)" stroke-width="1.4" opacity="0.55"/></svg>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="position:absolute;bottom:-6px;right:-6px;"><path d="M13 5V13H5" stroke="var(--amber)" stroke-width="1.4" opacity="0.55"/></svg>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;margin-bottom:18px;border-bottom:1px solid var(--line-soft);">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--ink-faint);display:inline-block;"></span>
+          <span class="mono" style="font-size:11px;color:var(--ink-dim);">aguardando link</span>
+        </div>
+        <span class="mono" style="font-size:11px;color:var(--ink-faint);">--:--:--</span>
+      </div>
+
+      <div class="mono" style="font-size:10px;color:var(--ink-faint);margin-bottom:6px;">link do vídeo</div>
+      <input type="text" placeholder="Cole aqui o link" class="mono" style="width:100%;background:var(--field);border:1px solid var(--line-soft);color:var(--ink);font-size:13px;padding:12px;outline:none;" />
+      <div class="sans" style="font-size:11px;color:var(--ink-faint);margin-top:8px;line-height:1.4;">Detectamos a plataforma automaticamente ao colar o link.</div>
+
+      <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="mono" style="font-size:10px;color:var(--ink-faint);">chave de acesso</div>
+        <span style="width:26px;height:15px;border-radius:8px;background:var(--amber);position:relative;display:inline-block;">
+          <span style="position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:var(--amber-ink);"></span>
+        </span>
+      </div>
+      <input type="password" placeholder="••••••••••••" class="mono" style="width:100%;background:var(--field);border:1px solid var(--line-soft);color:var(--ink);font-size:13px;padding:12px;outline:none;" />
+      <div class="sans" style="font-size:10px;color:var(--ink-faint);margin-top:6px;">salvar neste dispositivo</div>
+
+      <button style="margin-top:22px;width:100%;background:var(--amber);color:var(--amber-ink);border:none;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;padding:15px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5" stroke="var(--amber-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" stroke="var(--amber-ink)" stroke-width="2" stroke-linecap="round"/></svg>
+        Baixar vídeo
+      </button>
+    </div>
+
+    <div class="mono" style="text-align:center;font-size:10px;color:var(--ink-faint);margin-top:16px;line-height:1.5;">uso pessoal — respeite direitos autorais<br/>e termos das plataformas</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
