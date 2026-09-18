@@ -130,6 +130,17 @@ Configuráveis via `.env`:
 O backend primeiro consulta os metadados do vídeo (duração e tamanho
 aproximado) e só inicia o download de fato se estiver dentro dos limites.
 
+## 6.1. Compatibilidade com iPhone/WhatsApp
+
+Depois de baixar, o backend confere com `ffprobe` se o vídeo é mesmo
+H.264 (yuv420p) + AAC — não basta ter extensão `.mp4`. YouTube e Facebook às
+vezes servem vídeo em VP9/AV1/HEVC ou cor de 10 bits dentro de um container
+`.mp4`; isso abre normalmente no PC, mas no iPhone (e ao compartilhar pelo
+WhatsApp) aparece como **tela preta**. Quando detecta isso, o backend
+transcodifica com `ffmpeg` antes de responder — o download fica um pouco
+mais lento nesses casos, mas garante que o arquivo final toca em qualquer
+aparelho.
+
 ## 7. Limitação conhecida: YouTube pode bloquear downloads do servidor
 
 O YouTube vem bloqueando agressivamente downloads feitos a partir de IPs de
