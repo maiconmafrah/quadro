@@ -9,8 +9,10 @@ Resposta: o arquivo de vídeo (mp4) direto no corpo da resposta, ou um JSON de e
 from __future__ import annotations
 
 import concurrent.futures
+import json
 import os
 import shutil
+import subprocess
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
@@ -109,6 +111,68 @@ def run_with_timeout(func, timeout_seconds: int):
 
 def error_response(status_code: int, error: str, message: str) -> HTTPException:
     return HTTPException(status_code=status_code, detail={"error": error, "message": message})
+
+
+def needs_transcode(path: Path) -> bool:
+    """
+    iPhone/WhatsApp só reproduzem de forma garantida vídeo H.264 8-bit
+    (yuv420p) com áudio AAC. Um mp4 com VP9/AV1, HEVC ou cor de 10 bits
+    costuma "abrir" (o arquivo existe, o player nem sempre acusa erro) mas
+    mostra tela preta nesses apps. Se não der pra confirmar que já está
+    nesse formato, transcodifica por segurança.
+    """
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", str(path)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        info = json.loads(out.stdout)
+    except Exception:
+        return True
+
+    streams = info.get("streams", [])
+    video = next((s for s in streams if s.get("codec_type") == "video"), None)
+    audio = next((s for s in streams if s.get("codec_type") == "audio"), None)
+
+    if video is None:
+        return True
+    if video.get("codec_name") != "h264":
+        return True
+    if not str(video.get("pix_fmt", "")).startswith("yuv420p"):
+        return True
+    if audio is not None and audio.get("codec_name") != "aac":
+        return True
+    return False
+
+
+def transcode_to_h264(src_path: Path, dst_path: Path, timeout_seconds: int) -> None:
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(src_path),
+            "-c:v",
+            "libx264",
+            "-profile:v",
+            "high",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "160k",
+            "-movflags",
+            "+faststart",
+            str(dst_path),
+        ],
+        capture_output=True,
+        timeout=timeout_seconds,
+        check=True,
+    )
 
 
 @app.get("/api/health")
@@ -230,6 +294,28 @@ def download_video(payload: DownloadRequest):
     if result_file is None or not result_file.exists():
         shutil.rmtree(job_dir, ignore_errors=True)
         raise error_response(500, "file_missing", "O arquivo baixado não foi encontrado no servidor.")
+
+    # 3) garante H.264/AAC de verdade (não só a extensão .mp4) — sem isso o
+    # vídeo pode abrir tela preta no iPhone/WhatsApp mesmo parecendo válido.
+    if needs_transcode(result_file):
+        transcoded_file = result_file.with_name(result_file.stem + "_h264.mp4")
+        try:
+            run_with_timeout(
+                lambda: transcode_to_h264(result_file, transcoded_file, DOWNLOAD_TIMEOUT_SECONDS),
+                DOWNLOAD_TIMEOUT_SECONDS,
+            )
+        except HTTPException:
+            shutil.rmtree(job_dir, ignore_errors=True)
+            raise
+        except Exception:
+            shutil.rmtree(job_dir, ignore_errors=True)
+            raise error_response(
+                500,
+                "transcode_failed",
+                "Não foi possível preparar o vídeo para reprodução no celular.",
+            )
+        result_file.unlink(missing_ok=True)
+        result_file = transcoded_file
 
     if MAX_FILESIZE_MB and result_file.stat().st_size > MAX_FILESIZE_MB * 1024 * 1024:
         shutil.rmtree(job_dir, ignore_errors=True)
