@@ -149,6 +149,9 @@ def needs_transcode(path: Path) -> bool:
 
 
 def transcode_to_h264(src_path: Path, dst_path: Path, timeout_seconds: int) -> None:
+    # "veryfast" + "main" pesam bem menos em CPU/memória que os padrões do
+    # ffmpeg ("medium"/"high") — importante numa VPS pequena, onde um preset
+    # mais lento pode travar por minutos ou até estourar a RAM.
     subprocess.run(
         [
             "ffmpeg",
@@ -157,8 +160,10 @@ def transcode_to_h264(src_path: Path, dst_path: Path, timeout_seconds: int) -> N
             str(src_path),
             "-c:v",
             "libx264",
+            "-preset",
+            "veryfast",
             "-profile:v",
-            "high",
+            "main",
             "-pix_fmt",
             "yuv420p",
             "-c:a",
