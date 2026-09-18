@@ -5,6 +5,10 @@ const API_BASE_URL = "https://147-15-107-15.sslip.io/quadro-api";
 const STORAGE_KEY = "quadro:access_key";
 const STORAGE_THEME = "quadro:theme";
 
+// Um pouco acima do pior caso do backend (extração + download + conversão),
+// pra dar tempo do servidor responder antes do navegador desistir sozinho.
+const REQUEST_TIMEOUT_MS = 8 * 60 * 1000;
+
 const form = document.getElementById("download-form");
 const urlInput = document.getElementById("url-input");
 const keyInput = document.getElementById("key-input");
@@ -230,11 +234,18 @@ async function submitDownload() {
   setState("processing");
   startProgressMessages();
 
+  // Sem isso, uma queda de conexão (ou o iOS pausando a aba em segundo
+  // plano quando a tela bloqueia) deixa a página "carregando" pra sempre,
+  // sem erro e sem jeito de tentar de novo.
+  const controller = new AbortController();
+  const abortTimer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/download`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, access_key: accessKey }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -265,11 +276,18 @@ async function submitDownload() {
     setState("success");
   } catch (err) {
     stopProgressMessages();
-    errorDetail.textContent =
-      err instanceof ApiError
-        ? err.message
-        : "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
+    if (err instanceof ApiError) {
+      errorDetail.textContent = err.message;
+    } else if (err && err.name === "AbortError") {
+      errorDetail.textContent =
+        "A operação demorou demais e foi cancelada. Se o celular bloqueou a tela ou trocou de " +
+        "aplicativo enquanto baixava, isso pode ter interrompido a conexão — tente novamente.";
+    } else {
+      errorDetail.textContent = "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
+    }
     setState("error");
+  } finally {
+    clearTimeout(abortTimer);
   }
 }
 
