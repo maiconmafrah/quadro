@@ -8,16 +8,16 @@ Resposta: o arquivo de vídeo (mp4) direto no corpo da resposta, ou um JSON de e
 
 from __future__ import annotations
 
-import concurrent.futures
 import json
 import os
 import shutil
+import signal
 import subprocess
+import sys
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
-import yt_dlp
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
@@ -48,6 +48,8 @@ if not ACCESS_KEYS:
     )
 
 TEMP_ROOT.mkdir(parents=True, exist_ok=True)
+
+WORKER_SCRIPT = Path(__file__).parent / "ytdlp_worker.py"
 
 ALLOWED_HOST_SUFFIXES = {
     "youtube": ("youtube.com", "youtu.be"),
@@ -94,23 +96,55 @@ def detect_platform(url: str) -> str | None:
     return None
 
 
-def run_with_timeout(func, timeout_seconds: int):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(func)
-        try:
-            return future.result(timeout=timeout_seconds)
-        except concurrent.futures.TimeoutError:
-            raise HTTPException(
-                status_code=504,
-                detail={
-                    "error": "timeout",
-                    "message": f"A operação excedeu o tempo limite de {timeout_seconds} segundos.",
-                },
-            )
-
-
 def error_response(status_code: int, error: str, message: str) -> HTTPException:
     return HTTPException(status_code=status_code, detail={"error": error, "message": message})
+
+
+class WorkerError(Exception):
+    def __init__(self, kind: str, message: str):
+        super().__init__(message)
+        self.kind = kind  # "download_error" ou "internal_error"
+        self.message = message
+
+
+def run_ytdlp_worker(mode: str, url: str, opts: dict, timeout_seconds: int) -> dict:
+    """
+    Roda o yt-dlp num processo separado (não numa thread) para que um
+    travamento de rede possa ser encerrado de verdade com SIGKILL — uma
+    thread Python presa numa chamada de rede não tem como ser interrompida
+    à força, e ficaria consumindo memória indefinidamente no servidor.
+    """
+    proc = subprocess.Popen(
+        [sys.executable, str(WORKER_SCRIPT), mode, url, json.dumps(opts)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,  # próprio grupo de processos, pra matar o yt-dlp e o ffmpeg que ele chama junto
+    )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.communicate()
+        raise HTTPException(
+            status_code=504,
+            detail={
+                "error": "timeout",
+                "message": f"A operação excedeu o tempo limite de {timeout_seconds} segundos.",
+            },
+        )
+
+    if proc.returncode != 0:
+        stderr = (stderr or "").strip()
+        if stderr.startswith("DOWNLOAD_ERROR:"):
+            raise WorkerError("download_error", stderr[len("DOWNLOAD_ERROR:") :].strip())
+        raise WorkerError("internal_error", stderr or "erro desconhecido no yt-dlp")
+
+    last_line = stdout.strip().splitlines()[-1] if stdout.strip() else "{}"
+    return json.loads(last_line)
 
 
 def needs_transcode(path: Path) -> bool:
@@ -225,18 +259,14 @@ def download_video(payload: DownloadRequest):
     }
 
     # 1) extrai metadados sem baixar, para validar duração/tamanho antes de gastar banda
-    def extract():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(payload.url, download=False)
-
     try:
-        info = run_with_timeout(extract, EXTRACT_TIMEOUT_SECONDS)
+        info = run_ytdlp_worker("extract", payload.url, ydl_opts, EXTRACT_TIMEOUT_SECONDS)
     except HTTPException:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise
-    except yt_dlp.utils.DownloadError as e:
+    except WorkerError as e:
         shutil.rmtree(job_dir, ignore_errors=True)
-        if platform == "youtube" and "sign in" in str(e).lower():
+        if platform == "youtube" and "sign in" in e.message.lower():
             raise error_response(
                 422,
                 "youtube_blocked",
@@ -252,10 +282,6 @@ def download_video(payload: DownloadRequest):
     except Exception:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise error_response(500, "internal_error", "Erro inesperado ao ler as informações do vídeo.")
-
-    if info is None:
-        shutil.rmtree(job_dir, ignore_errors=True)
-        raise error_response(422, "extraction_failed", "Não foi possível obter informações deste vídeo.")
 
     duration = info.get("duration") or 0
     if MAX_DURATION_SECONDS and duration > MAX_DURATION_SECONDS:
@@ -276,16 +302,12 @@ def download_video(payload: DownloadRequest):
         )
 
     # 2) baixa de fato
-    def do_download():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([payload.url])
-
     try:
-        run_with_timeout(do_download, DOWNLOAD_TIMEOUT_SECONDS)
+        run_ytdlp_worker("download", payload.url, ydl_opts, DOWNLOAD_TIMEOUT_SECONDS)
     except HTTPException:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise
-    except yt_dlp.utils.DownloadError:
+    except WorkerError:
         shutil.rmtree(job_dir, ignore_errors=True)
         raise error_response(502, "download_failed", "Falha ao baixar o vídeo. Tente novamente em instantes.")
     except Exception:
@@ -305,13 +327,14 @@ def download_video(payload: DownloadRequest):
     if needs_transcode(result_file):
         transcoded_file = result_file.with_name(result_file.stem + "_h264.mp4")
         try:
-            run_with_timeout(
-                lambda: transcode_to_h264(result_file, transcoded_file, DOWNLOAD_TIMEOUT_SECONDS),
-                DOWNLOAD_TIMEOUT_SECONDS,
-            )
-        except HTTPException:
+            transcode_to_h264(result_file, transcoded_file, DOWNLOAD_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
             shutil.rmtree(job_dir, ignore_errors=True)
-            raise
+            raise error_response(
+                504,
+                "timeout",
+                f"A conversão do vídeo excedeu o tempo limite de {DOWNLOAD_TIMEOUT_SECONDS} segundos.",
+            )
         except Exception:
             shutil.rmtree(job_dir, ignore_errors=True)
             raise error_response(
