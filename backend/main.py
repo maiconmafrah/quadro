@@ -32,7 +32,7 @@ except ImportError:
 
 # --- configuração via variáveis de ambiente ---------------------------------
 
-ACCESS_KEY = os.environ.get("ACCESS_KEY", "")
+ACCESS_KEYS = {k.strip() for k in os.environ.get("ACCESS_KEY", "").split(",") if k.strip()}
 FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "")
 MAX_DURATION_SECONDS = int(os.environ.get("MAX_DURATION_SECONDS", "3600"))
 MAX_FILESIZE_MB = int(os.environ.get("MAX_FILESIZE_MB", "500"))
@@ -40,7 +40,7 @@ EXTRACT_TIMEOUT_SECONDS = int(os.environ.get("EXTRACT_TIMEOUT_SECONDS", "30"))
 DOWNLOAD_TIMEOUT_SECONDS = int(os.environ.get("DOWNLOAD_TIMEOUT_SECONDS", "600"))
 TEMP_ROOT = Path(os.environ.get("TEMP_DIR", "/tmp/quadro-downloads"))
 
-if not ACCESS_KEY:
+if not ACCESS_KEYS:
     raise RuntimeError(
         "A variável de ambiente ACCESS_KEY precisa estar definida antes de iniciar o servidor."
     )
@@ -118,7 +118,7 @@ def health():
 
 @app.post("/api/download")
 def download_video(payload: DownloadRequest):
-    if payload.access_key != ACCESS_KEY:
+    if payload.access_key not in ACCESS_KEYS:
         raise error_response(401, "unauthorized", "Chave de acesso inválida.")
 
     platform = detect_platform(payload.url)
