@@ -206,13 +206,6 @@ a:hover { color: oklch(0.85 0.16 55); }
   margin-bottom: 6px;
 }
 
-.field-label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
-}
-
 .input-wrap { position: relative; }
 
 input[type="text"],
@@ -273,43 +266,6 @@ input:disabled { opacity: 0.4; }
 }
 .icon-btn svg path,
 .icon-btn svg circle { stroke: var(--ink-faint); }
-
-.switch-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-.switch-text {
-  font-size: 11px;
-  color: var(--ink-faint);
-  font-family: "Space Grotesk", sans-serif;
-}
-.switch-input { display: none; }
-.switch-track {
-  width: 28px;
-  height: 16px;
-  border-radius: 9px;
-  background: var(--line-soft);
-  position: relative;
-  display: inline-block;
-  transition: background 0.15s ease;
-}
-.switch-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--ink-faint);
-  transition: left 0.15s ease, background 0.15s ease;
-}
-.switch-input:checked + .switch-track { background: var(--amber); }
-.switch-input:checked + .switch-track .switch-thumb {
-  left: 12px;
-  background: var(--amber-ink);
-}
 
 .btn-primary {
   margin-top: 26px;

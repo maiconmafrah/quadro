@@ -8,7 +8,6 @@ const STORAGE_THEME = "quadro:theme";
 const form = document.getElementById("download-form");
 const urlInput = document.getElementById("url-input");
 const keyInput = document.getElementById("key-input");
-const saveKeyToggle = document.getElementById("save-key-toggle");
 const toggleKeyVisibilityBtn = document.getElementById("toggle-key-visibility");
 const submitBtn = document.getElementById("submit-btn");
 const progressArea = document.getElementById("progress-area");
@@ -70,7 +69,6 @@ themeToggle.addEventListener("click", () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       keyInput.value = saved;
-      saveKeyToggle.checked = true;
     }
   } catch (err) {
     /* ignora se não houver localStorage disponível */
@@ -224,11 +222,7 @@ async function submitDownload() {
   }
 
   try {
-    if (saveKeyToggle.checked) {
-      localStorage.setItem(STORAGE_KEY, accessKey);
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    localStorage.setItem(STORAGE_KEY, accessKey);
   } catch (err) {
     /* ignora se não houver localStorage disponível */
   }
