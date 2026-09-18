@@ -3,6 +3,7 @@ __pycache__/
 backend/venv/
 backend/.env
 .DS_Store
+.claude/scheduled_tasks.lock
 
 # artefato gerado (payload do editor do canvas de design, ~2.5MB) — o
 # design em si já está publicado como Artifact e as fontes .dc.html
