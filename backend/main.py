@@ -134,7 +134,16 @@ def download_video(payload: DownloadRequest):
     job_dir.mkdir(parents=True, exist_ok=True)
 
     ydl_opts = {
-        "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        # Força H.264 (avc1) + AAC (mp4a) sempre que possível: são os únicos
+        # codecs que tocam de forma garantida no iPhone/iOS. Um mp4 com vídeo
+        # em VP9/AV1 (comum no Facebook em qualidades mais altas) abre no PC
+        # mas não reproduz no iOS.
+        "format": (
+            "bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[acodec^=mp4a][ext=m4a]/"
+            "best[vcodec^=avc1][ext=mp4]/"
+            "bestvideo[ext=mp4]+bestaudio[ext=m4a]/"
+            "best[ext=mp4]/best"
+        ),
         "merge_output_format": "mp4",
         "outtmpl": str(job_dir / "%(id)s.%(ext)s"),
         "quiet": True,
